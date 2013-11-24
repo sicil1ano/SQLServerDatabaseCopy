@@ -10,3 +10,5 @@ The application, furthermore, writes a log file (with *.txt extension) to monito
 
 
 The application uses SMO (SQL Server Management Objects) libraries : http://technet.microsoft.com/en-us/library/ms162169.aspx
+
+This software is released according to the terms of LGPL software license : http://en.wikipedia.org/wiki/LGPL
