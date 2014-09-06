@@ -1,4 +1,5 @@
-﻿using Microsoft.SqlServer.Management.Smo;
+﻿using Microsoft.SqlServer.Management.Common;
+using Microsoft.SqlServer.Management.Smo;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -36,8 +37,10 @@ namespace SQLServerDatabaseCopy
         /// </summary>
         public DatabaseSchemaManager()
         {
-            this.Server = new Server();
             this.ConnectionString = ConnectionStringHelper.GetConnectionString();
+            var sqlConnection = new SqlConnection(this.ConnectionString);
+            var serverConnection = new ServerConnection(sqlConnection);
+            this.Server = new Server(serverConnection);
         }
 
         #endregion
@@ -90,10 +93,24 @@ namespace SQLServerDatabaseCopy
 
             transfer.CopySchema = true;
             transfer.CopyAllObjects = true;
-            transfer.CopyData = false;
-            transfer.Options.WithDependencies = true;
             transfer.CopyAllStoredProcedures = true;
             transfer.CopyAllDatabaseTriggers = true;
+            transfer.CopyAllTables = true;
+            transfer.CopyAllDefaults = true;
+            transfer.CopyAllSchemas = true;
+            transfer.CopyAllSearchPropertyLists = true;
+            transfer.CopyAllViews = true;
+            transfer.CopyAllXmlSchemaCollections = true;    
+            transfer.CopyData = false;
+
+            transfer.Options.Indexes = true;
+            transfer.Options.ClusteredIndexes = true;
+            transfer.Options.NonClusteredIndexes = true;
+            transfer.Options.DriAllConstraints = true;
+            transfer.Options.DriAllKeys = true;
+            transfer.Options.DriForeignKeys = true;
+            transfer.Options.WithDependencies = true;
+
             transfer.DestinationDatabase = cloneDatabase.Name;
 
             var sourceDatabaseSchema = transfer.ScriptTransfer();
