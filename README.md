@@ -1,7 +1,7 @@
 SQLServerDatabaseCopy
 =====================
 
-A console application that performs the copy of of each SQL Server user database in the selected instance.
+A console application that performs the copy of each SQL Server user database in the selected instance.
 The connection string needed to connect to the selected SQL Server instance is set in the *.config file of the application.
 
 The database copy is performed generating the schema of each user database and executing a bulk copy of the data contained in each table of the each user database.

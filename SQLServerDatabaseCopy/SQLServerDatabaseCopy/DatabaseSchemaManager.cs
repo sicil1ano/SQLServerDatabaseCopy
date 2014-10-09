@@ -56,19 +56,14 @@ namespace SQLServerDatabaseCopy
             LogFileManager.WriteToLogFile(String.Format("Using the Connection String: {0}", ConnectionString));
             Console.WriteLine("Getting the list of user databases installed in the selected server..");
             LogFileManager.WriteToLogFile("Getting the list of user databases installed in the selected server..");
-            StringCollection systemDatabases = new StringCollection();
-            systemDatabases.Add("master");
-            systemDatabases.Add("msdb");
-            systemDatabases.Add("tempdb");
-            systemDatabases.Add("model");
 
             DatabaseCollection allDatabasesCollection = Databases;
             List<Database> userDatabasesCollection = new List<Database>();
 
             foreach (Database database in allDatabasesCollection)
             {
-                bool isSystemDatabase = systemDatabases.Contains(database.Name);
-                if (!isSystemDatabase)
+                //only user databases are needed!
+                if (!database.IsSystemObject)
                 {
                     userDatabasesCollection.Add(database);
                 }
