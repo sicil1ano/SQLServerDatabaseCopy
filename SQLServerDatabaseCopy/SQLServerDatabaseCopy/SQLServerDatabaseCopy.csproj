@@ -67,7 +67,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConnectionStringHelper.cs" />
+    <Compile Include="ApplicationSettingsHelper.cs" />
     <Compile Include="DatabaseSchemaManager.cs" />
     <Compile Include="DatabaseTableManager.cs" />
     <Compile Include="LogFileManager.cs" />

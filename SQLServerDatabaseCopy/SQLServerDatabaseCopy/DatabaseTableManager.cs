@@ -113,7 +113,7 @@ namespace SQLServerDatabaseCopy
                     useCommand.ExecuteNonQuery();
                 }
 
-                string destDatabaseConnString = ConnectionStringHelper.GetUserDatabaseConnectionString(cloneDatabase.Name);
+                string destDatabaseConnString = ApplicationSettingsHelper.GetUserDatabaseConnectionString(cloneDatabase.Name);
 
                 Console.WriteLine("Starting copying data from {0} source tables..", Tables.Count);
                 LogFileManager.WriteToLogFile(String.Format("Starting copying data from {0} source tables..", Tables.Count));

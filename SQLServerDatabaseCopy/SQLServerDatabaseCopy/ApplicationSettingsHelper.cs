@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 namespace SQLServerDatabaseCopy
 {
     /// <summary>
-    /// ConnectionStringHelper class. It manages the connection string contained in the config file.
+    /// ApplicationSettingsHelper class. It manages the connection string contained in the config file.
     /// </summary>
-    public static class ConnectionStringHelper
+    public static class ApplicationSettingsHelper
     {
         /// <summary>
         /// Gets the connection string set in the configuration file of the applications.
@@ -49,6 +49,20 @@ namespace SQLServerDatabaseCopy
             connectionString = connectionString.Replace("master", databaseName);
 
             return connectionString;
+        }
+
+        public static string GetClonedDatabaseNameSuffix()
+        {
+            string clonedDatabaseName = null;
+
+            var clonedDatabaseSetting = ConfigurationManager.AppSettings["CloneDatabaseNameSuffix"];
+
+            if(clonedDatabaseSetting != null)
+            {
+                clonedDatabaseName = clonedDatabaseSetting;
+            }
+
+            return clonedDatabaseName;
         }
     }
 }

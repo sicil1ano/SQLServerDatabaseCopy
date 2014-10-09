@@ -19,6 +19,7 @@ namespace SQLServerDatabaseCopy
         public LogFileManager LogFileManager { get; set; }
         public Server Server { get; set; }
         public string ConnectionString { get; set; }
+        public string CloneDatabaseNameSuffix { get; set; }
 
         private DatabaseCollection Databases
         {
@@ -37,7 +38,8 @@ namespace SQLServerDatabaseCopy
         /// </summary>
         public DatabaseSchemaManager()
         {
-            this.ConnectionString = ConnectionStringHelper.GetConnectionString();
+            this.ConnectionString = ApplicationSettingsHelper.GetConnectionString();
+            this.CloneDatabaseNameSuffix = ApplicationSettingsHelper.GetClonedDatabaseNameSuffix();
             var sqlConnection = new SqlConnection(this.ConnectionString);
             var serverConnection = new ServerConnection(sqlConnection);
             this.Server = new Server(serverConnection);
@@ -95,7 +97,7 @@ namespace SQLServerDatabaseCopy
             transfer.CopyAllSchemas = true;
             transfer.CopyAllSearchPropertyLists = true;
             transfer.CopyAllViews = true;
-            transfer.CopyAllXmlSchemaCollections = true;    
+            transfer.CopyAllXmlSchemaCollections = true;
             transfer.CopyData = false;
 
             transfer.Options.Indexes = true;
@@ -164,7 +166,7 @@ namespace SQLServerDatabaseCopy
             dbtMng.LogFileManager = this.LogFileManager;
             foreach (var sourceDatabase in userDatabases)
             {
-                Database cloneDatabase = new Database(Server, sourceDatabase.Name + "_clone");
+                Database cloneDatabase = new Database(Server, sourceDatabase.Name + CloneDatabaseNameSuffix);
                 cloneDatabase.Collation = sourceDatabase.Collation;
                 var sourceDatabaseSchema = GenerateDatabaseSchema(sourceDatabase, cloneDatabase);
                 CopySchema(cloneDatabase, sourceDatabaseSchema);
