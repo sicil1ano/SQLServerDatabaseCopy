@@ -12,6 +12,8 @@ namespace SQLServerDatabaseCopy
     /// </summary>
     public static class ApplicationSettingsHelper
     {
+        #region Members
+
         /// <summary>
         /// Gets the connection string set in the configuration file of the applications.
         /// </summary>
@@ -51,7 +53,11 @@ namespace SQLServerDatabaseCopy
             return connectionString;
         }
 
-        public static string GetClonedDatabaseNameSuffix()
+        /// <summary>
+        /// Gets the customized clone database name suffix to add to the name of each database to copy.
+        /// </summary>
+        /// <returns>The suffix to add to the name of each database to copy.</returns>
+        public static string GetCloneDatabaseNameSuffix()
         {
             string clonedDatabaseName = null;
 
@@ -64,5 +70,7 @@ namespace SQLServerDatabaseCopy
 
             return clonedDatabaseName;
         }
+
+        #endregion
     }
 }

@@ -39,7 +39,7 @@ namespace SQLServerDatabaseCopy
         public DatabaseSchemaManager()
         {
             this.ConnectionString = ApplicationSettingsHelper.GetConnectionString();
-            this.CloneDatabaseNameSuffix = ApplicationSettingsHelper.GetClonedDatabaseNameSuffix();
+            this.CloneDatabaseNameSuffix = ApplicationSettingsHelper.GetCloneDatabaseNameSuffix();
             var sqlConnection = new SqlConnection(this.ConnectionString);
             var serverConnection = new ServerConnection(sqlConnection);
             this.Server = new Server(serverConnection);
