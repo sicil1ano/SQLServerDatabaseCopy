@@ -12,10 +12,10 @@ namespace SQLServerDatabaseCopy
             try
             {
                 Console.WriteLine("The application will start..");
-                DatabaseSchemaManager dbMng = new DatabaseSchemaManager();
+                ApplicationSettingsHelper ash = new ApplicationSettingsHelper();
                 LogFileManager lfm = new LogFileManager();
-                dbMng.LogFileManager = lfm;
-                dbMng.ExecuteDatabaseCopy();
+                DatabaseSchemaManager dbMng = new DatabaseSchemaManager(ash,lfm);
+                dbMng.Execute();
                 lfm.CloseLogFile();
             }
             catch (Exception ex)

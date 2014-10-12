@@ -14,6 +14,8 @@ namespace SQLServerDatabaseCopy
     {
         #region Properties
 
+        public ApplicationSettingsHelper ApplicationSettingsHelper { get; set; }
+
         public LogFileManager LogFileManager { get; set; }
         public Database SourceDatabase { get; set; }
         public string ConnectionString { get; set; }

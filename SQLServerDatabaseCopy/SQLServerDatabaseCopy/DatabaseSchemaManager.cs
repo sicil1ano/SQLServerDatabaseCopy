@@ -14,10 +14,18 @@ namespace SQLServerDatabaseCopy
     /// </summary>
     public class DatabaseSchemaManager
     {
+        #region Fields
+
+        bool sqlConnectionIsAvailable;
+        Server server;
+
+        #endregion
+
         #region Properties
 
+        public ApplicationSettingsHelper ApplicationSettingsHelper { get; set; }
+
         public LogFileManager LogFileManager { get; set; }
-        public Server Server { get; set; }
         public string ConnectionString { get; set; }
         public string CloneDatabaseNameSuffix { get; set; }
 
@@ -25,7 +33,7 @@ namespace SQLServerDatabaseCopy
         {
             get
             {
-                return Server.Databases;
+                return server.Databases;
             }
         }
 
@@ -34,15 +42,14 @@ namespace SQLServerDatabaseCopy
         #region Constructors
 
         /// <summary>
-        /// Main Constructor. It initialises a new server connection, using the connection string set in the config file of application.
+        /// Main Constructor. It initialises a new DatabaseSchemaManager object, using the given parameters.
         /// </summary>
-        public DatabaseSchemaManager()
+        /// <param name="ash">The ApplicationSettingsHelper object to retrieve the application settings.</param>
+        /// <param name="lfm">LogFileManager object to write output to a log file.</param>
+        public DatabaseSchemaManager(ApplicationSettingsHelper ash, LogFileManager lfm)
         {
-            this.ConnectionString = ApplicationSettingsHelper.GetConnectionString();
-            this.CloneDatabaseNameSuffix = ApplicationSettingsHelper.GetCloneDatabaseNameSuffix();
-            var sqlConnection = new SqlConnection(this.ConnectionString);
-            var serverConnection = new ServerConnection(sqlConnection);
-            this.Server = new Server(serverConnection);
+            this.ApplicationSettingsHelper = ash;
+            this.LogFileManager = lfm;
         }
 
         #endregion
@@ -50,10 +57,44 @@ namespace SQLServerDatabaseCopy
         #region Members
 
         /// <summary>
+        /// Starts the database copy process.
+        /// </summary>
+        public void Execute()
+        {
+            string connectionString = ApplicationSettingsHelper.ConnectionString;
+            string cloneDatabaseNameSuffix = ApplicationSettingsHelper.CloneDatabaseNameSuffix;
+            InitializeSqlServerConnection(connectionString, cloneDatabaseNameSuffix);
+        }
+
+        /// <summary>
+        /// Perfoms the creation of user database clones from source user databases, copying the related schema and data.
+        /// </summary>
+        private void ExecuteDatabaseCopy()
+        {
+            var userDatabases = GetUserDatabases();
+            DatabaseTableManager dbtMng = new DatabaseTableManager();
+            dbtMng.ConnectionString = this.ConnectionString;
+            dbtMng.LogFileManager = this.LogFileManager;
+            dbtMng.ApplicationSettingsHelper = this.ApplicationSettingsHelper;
+            foreach (var sourceDatabase in userDatabases)
+            {
+                Database cloneDatabase = new Database(server, sourceDatabase.Name + CloneDatabaseNameSuffix);
+                cloneDatabase.Collation = sourceDatabase.Collation;
+                var sourceDatabaseSchema = GenerateDatabaseSchema(sourceDatabase, cloneDatabase);
+                CopySchema(cloneDatabase, sourceDatabaseSchema);
+                if (cloneDatabase.Tables.Count != 0)
+                {
+                    dbtMng.SourceDatabase = sourceDatabase;
+                    dbtMng.CopyDataFromTableToTable(cloneDatabase);
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets a list of user databases for the selected instance.
         /// </summary>
         /// <returns>List of User Databases.</returns>
-        public List<Database> GetUserDatabases()
+        private List<Database> GetUserDatabases()
         {
             LogFileManager.WriteToLogFile(String.Format("Using the Connection String: {0}", ConnectionString));
             Console.WriteLine("Getting the list of user databases installed in the selected server..");
@@ -70,10 +111,35 @@ namespace SQLServerDatabaseCopy
                     userDatabasesCollection.Add(database);
                 }
             }
+
             Console.WriteLine("The list of user databases installed in the selected server is retrieved.");
             LogFileManager.WriteToLogFile("The list of user databases installed in the selected server is retrieved.");
 
             return userDatabasesCollection;
+        }
+
+        /// <summary>
+        /// Initialize the SQL Server Connection using the given parameters.
+        /// </summary>
+        /// <param name="connectionString"></param>
+        /// <param name="cloneDatabaseNameSuffix"></param>
+        private void InitializeSqlServerConnection(string connectionString, string cloneDatabaseNameSuffix)
+        {
+            ValidateConnectionSettings(connectionString, cloneDatabaseNameSuffix);
+            if (sqlConnectionIsAvailable)
+            {
+                SqlConnection sqlConnection = new SqlConnection(connectionString);
+                var serverConnection = new ServerConnection(sqlConnection);
+                this.server = new Server(serverConnection);
+                ExecuteDatabaseCopy();
+            }
+            else
+            {
+                Console.WriteLine("Cannot initialize a SQL Server connection using the given connection string {0}", connectionString);
+                Console.WriteLine("The process cannot continue. Process aborted.");
+                LogFileManager.WriteToLogFile(String.Format("Cannot initialize a SQL Server connection using the given connection string {0}", connectionString));
+                LogFileManager.WriteToLogFile("The process cannot continue. Process aborted.");
+            }
         }
 
         /// <summary>
@@ -84,7 +150,6 @@ namespace SQLServerDatabaseCopy
         /// <returns></returns>
         private StringCollection GenerateDatabaseSchema(Database userDatabase, Database cloneDatabase)
         {
-            //Console.WriteLine(String.Format("Starting schema generation of database {0} to be copied for the cloned database.", userDatabase.Name));
             LogFileManager.WriteToLogFile(String.Format("Starting schema generation of database {0} to be copied for the cloned database.", userDatabase.Name));
             Transfer transfer = new Transfer(userDatabase);
 
@@ -111,7 +176,6 @@ namespace SQLServerDatabaseCopy
             transfer.DestinationDatabase = cloneDatabase.Name;
 
             var sourceDatabaseSchema = transfer.ScriptTransfer();
-            //Console.WriteLine(String.Format("Generated schema of database {0} to be copied for the cloned database.", userDatabase.Name));
             LogFileManager.WriteToLogFile(String.Format("Generated schema of database {0} to be copied for the cloned database.", userDatabase.Name));
 
             return sourceDatabaseSchema;
@@ -127,7 +191,6 @@ namespace SQLServerDatabaseCopy
             cloneDatabase.Create();
             Console.WriteLine("Database : " + cloneDatabase.Name + " created.");
             LogFileManager.WriteToLogFile(String.Format("Clone Database : {0} created.", cloneDatabase.Name));
-            //Console.WriteLine(String.Format("Starting the schema copying from source database to clone database {0}", cloneDatabase.Name));
             LogFileManager.WriteToLogFile(String.Format("Starting the schema copying from source database to clone database {0}", cloneDatabase.Name));
 
             using (SqlConnection connection = new SqlConnection(ConnectionString))
@@ -155,27 +218,39 @@ namespace SQLServerDatabaseCopy
             }
         }
 
-        /// <summary>
-        /// Perfoms the creation of user database clones from source user databases, copying the related schema and data.
-        /// </summary>
-        public void ExecuteDatabaseCopy()
+        private void ValidateConnectionSettings(string connectionString, string cloneDatabaseNameSuffix)
         {
-            var userDatabases = GetUserDatabases();
-            DatabaseTableManager dbtMng = new DatabaseTableManager();
-            dbtMng.ConnectionString = this.ConnectionString;
-            dbtMng.LogFileManager = this.LogFileManager;
-            foreach (var sourceDatabase in userDatabases)
+            sqlConnectionIsAvailable = CheckConnectionString(connectionString);
+            if (sqlConnectionIsAvailable)
             {
-                Database cloneDatabase = new Database(Server, sourceDatabase.Name + CloneDatabaseNameSuffix);
-                cloneDatabase.Collation = sourceDatabase.Collation;
-                var sourceDatabaseSchema = GenerateDatabaseSchema(sourceDatabase, cloneDatabase);
-                CopySchema(cloneDatabase, sourceDatabaseSchema);
-                if (cloneDatabase.Tables.Count != 0)
+                this.ConnectionString = connectionString;
+                if (String.IsNullOrEmpty(cloneDatabaseNameSuffix))
                 {
-                    dbtMng.SourceDatabase = sourceDatabase;
-                    dbtMng.CopyDataFromTableToTable(cloneDatabase);
+                    this.CloneDatabaseNameSuffix = ApplicationSettingsHelper.GetNewCloneDatabaseNameSuffix();
                 }
             }
+        }
+
+        /// <summary>
+        /// Checks the connection to a SQL Server istance using the given connection string.
+        /// </summary>
+        /// <param name="connectionString">The connection string to use for the connection to a SQL Server istance.</param>
+        /// <returns>True if the connection is okay, false otherwise.</returns>
+        private bool CheckConnectionString(string connectionString)
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                try
+                {
+                    connection.Open();
+                }
+                catch (SqlException)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         #endregion
