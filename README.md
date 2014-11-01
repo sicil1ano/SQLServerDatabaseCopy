@@ -1,4 +1,4 @@
-SQLServerDatabaseCopy
+SQL Server Database Cloning Manager
 =====================
 
 A console application that performs the copy of each SQL Server user database in the selected instance.
